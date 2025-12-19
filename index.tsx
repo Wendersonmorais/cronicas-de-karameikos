@@ -17,6 +17,8 @@ const ImageIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w
 const BackpackIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 4v12a2 2 0 0 1-2 2z"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 21v-5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5"></path></svg>;
 const ScrollIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 4v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>;
 const StatsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>;
+const DownloadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
+const UploadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
 
 // Sub Components
 const ScreenModal: React.FC<{ title: string; children: React.ReactNode; onClose: () => void }> = ({ title, children, onClose }) => (
@@ -164,7 +166,8 @@ const CharacterCreationModal: React.FC<{
 
                 {activeTab === 'inventory' && (
                     <div className="animate-fade-in h-full flex flex-col">
-                        <label className="block text-xs text-gray-400 uppercase font-bold mb-2">Equipamentos e Tesouros</label>
+                        <label className="block text-xs text-gray-400 uppercase font-bold mb-2">Equipamentos Iniciais</label>
+                        <p className="text-[10px] text-gray-500 mb-2">Nota: Itens encontrados durante o jogo aparecerão na lista lateral.</p>
                         <textarea 
                             className="w-full flex-1 bg-black/40 border border-gray-700 rounded p-4 text-white focus:border-gold outline-none custom-scrollbar min-h-[200px] font-serif text-sm leading-relaxed placeholder-gray-700"
                             placeholder="Liste seus itens, armas, armaduras e moedas de ouro..."
@@ -186,29 +189,86 @@ const CharacterCreationModal: React.FC<{
   );
 };
 
-const CharacterCard = ({ player, onOpenScreen }: any) => (
-  <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 h-full text-white">
-    <div className="flex items-center gap-4 mb-4">
-      <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-2xl border border-gold/30 overflow-hidden relative">
-        {player?.avatarUrl ? (
-            <img src={player.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-        ) : (
-            <span>{player?.class ? player.class[0] : '?'}</span>
-        )}
+const CharacterCard = ({ player, onOpenScreen }: any) => {
+    // Calcular porcentagem de vida para a barra
+    const hpPercent = player?.stats?.hp_max > 0 
+        ? Math.max(0, Math.min(100, (player.stats.hp_current / player.stats.hp_max) * 100)) 
+        : 100;
+
+    return (
+      <div className="bg-gray-900 flex flex-col h-full rounded-lg border border-gray-700 text-white overflow-hidden">
+        {/* Top Section: Avatar & Status */}
+        <div className="p-4 bg-gray-800/50">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-2xl border border-gold/30 overflow-hidden relative shadow-lg">
+                {player?.avatarUrl ? (
+                    <img src={player.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                    <span className="cinzel text-gold">{player?.class ? player.class[0] : '?'}</span>
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold font-serif text-gold leading-none mb-1">{player?.name || "Desconhecido"}</h2>
+                <p className="text-xs text-gray-400 uppercase tracking-widest">{player?.class || "Classe Indefinida"}</p>
+              </div>
+            </div>
+
+            {/* HP Bar Dinâmica */}
+            <div className="space-y-1 mb-4">
+                <div className="flex justify-between text-xs uppercase font-bold tracking-wider">
+                    <span>Vida (HP)</span>
+                    <span className={`${hpPercent < 30 ? 'text-red-500' : 'text-green-400'}`}>
+                        {player?.stats?.hp_current}/{player?.stats?.hp_max}
+                    </span>
+                </div>
+                <div className="h-2 bg-gray-950 rounded-full overflow-hidden border border-gray-700">
+                    <div 
+                        className={`h-full transition-all duration-500 ease-out ${hpPercent < 30 ? 'bg-red-600 animate-pulse' : 'bg-green-600'}`}
+                        style={{ width: `${hpPercent}%` }}
+                    ></div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+                 <div className="bg-gray-900/50 p-2 rounded border border-gray-700 flex justify-between">
+                    <span className="text-gray-400">XP</span> 
+                    <span className="text-blue-300 font-bold">{player?.stats?.xp}</span>
+                 </div>
+                 <div className="bg-gray-900/50 p-2 rounded border border-gray-700 flex justify-between">
+                    <span className="text-gray-400">Nível</span> 
+                    <span className="text-yellow-300 font-bold">{player?.stats?.level}</span>
+                 </div>
+            </div>
+        </div>
+
+        {/* Inventory Section (Loot System) */}
+        <div className="flex-1 p-4 border-t border-gray-700 overflow-y-auto custom-scrollbar bg-gray-900/30">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase text-gray-500 mb-3 tracking-widest">
+                <BackpackIcon /> Inventário (Loot)
+            </div>
+            
+            <ul className="space-y-2">
+                {player?.inventoryItems && player.inventoryItems.length > 0 ? (
+                    player.inventoryItems.map((item: string, i: number) => (
+                        <li key={i} className="text-sm text-gray-300 flex items-start gap-2 bg-black/20 p-2 rounded animate-fade-in-up">
+                            <span className="text-gold mt-0.5"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg></span>
+                            {item}
+                        </li>
+                    ))
+                ) : (
+                    <li className="text-xs text-gray-600 italic text-center py-4">Sua mochila está vazia...</li>
+                )}
+            </ul>
+        </div>
+        
+        <div className="p-4 border-t border-gray-700 bg-gray-800/50">
+             <button onClick={() => onOpenScreen('CHAR_CREATION')} className="w-full py-2 bg-gray-900 hover:bg-gray-700 border border-gray-600 rounded text-xs uppercase tracking-wide transition-colors">
+                Editar Ficha Completa
+             </button>
+        </div>
       </div>
-      <div>
-        <h2 className="text-xl font-bold font-serif text-gold">{player?.name || "Desconhecido"}</h2>
-        <p className="text-xs text-gray-400 uppercase tracking-widest">{player?.class || "Classe Indefinida"}</p>
-      </div>
-    </div>
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm"><span>HP</span> <span className="text-green-400">{player?.stats?.hp_current}/{player?.stats?.hp_max}</span></div>
-      <div className="flex justify-between text-sm"><span>XP</span> <span className="text-blue-400">{player?.stats?.xp}</span></div>
-      <div className="flex justify-between text-sm"><span>Nível</span> <span className="text-yellow-400">{player?.stats?.level}</span></div>
-    </div>
-    <button onClick={() => onOpenScreen('CHAR_CREATION')} className="mt-4 w-full py-2 bg-gray-800 hover:bg-gray-700 rounded text-xs uppercase tracking-wide transition-colors">Detalhes</button>
-  </div>
-);
+    );
+};
 
 const EntityCard = ({ npc }: any) => (
   <div className="bg-gray-900/80 p-3 rounded border border-gray-700 flex items-center gap-3 animate-fade-in text-white">
@@ -228,31 +288,29 @@ const EntityCard = ({ npc }: any) => (
 );
 
 // Constants
-const SYSTEM_INSTRUCTION = `VOCÊ É O MESTRE DE JOGO (DM) E O MOTOR (ENGINE) DE UM CRPG TEXTUAL.
-Cenário: Karameikos (Mystara). Regras: D&D 5e.
-Objetivo: Guiar o jogador, gerenciar regras, narrar, e fornecer metadados JSON.
+const SYSTEM_INSTRUCTION = `
+Você é o Mestre de Jogo (DM) de "Crônicas de Karameikos", ambientado em Mystara.
+Atue como um narrador clássico de D&D 5e: descritivo, justo, mas perigoso.
 
-FASE INICIAL: Não peça ficha. Comece em Threshold ao amanhecer. Pergunte nome/identidade.
-Depois, Cena da Carroça (perigo). Ação do jogador define classe sugerida.
-Depois, sugira Raça/Antecedente/Atributos em JSON.
+LORE & AMBIENTAÇÃO (Obrigatório):
+- O local é o Grão-Ducado de Karameikos. Há tensão entre os nativos Traladaranos (supersticiosos, oprimidos) e os conquistadores Thyatianos (pragmáticos, dominantes).
+- Mencione rumores sobre o Barão Águia Negra (vilão), a Ordem do Grifo ou os perigos da Floresta Dymrak.
+- Monstros comuns: Goblins, Gnolls, Lobisomens (frequentes na lore).
 
-FORMATO DE RESPOSTA (SEMPRE):
-1. BLOCO JSON (Obrigatório: Envolva este bloco em \`\`\`json ... \`\`\`):
-{
-  "location": "Local",
-  "scene_image_prompt": "Prompt visual detalhado",
-  "player_stats": { "hp_current": int, "hp_max": int, "xp": int, "level": int, "name": string, "class": string, "str": int, "dex": int, "con": int, "int": int, "wis": int, "cha": int },
-  "active_npcs": [ { "name": "Nome", "type": "enemy"|"friendly", "status": "visible", "hp_percent": int } ],
-  "suggestions": ["Ação 1", "Ação 2"],
-  "phase": "CREATION" | "PLAYING"
-}
-2. BLOCO MARKDOWN (Narrativa para o jogador).
+REGRAS DE GAMEPLAY (Obrigatório):
+1. Responda em Português.
+2. Formatação: Use **negrito** para NPCs e itens importantes. *Itálico* para sons e atmosfera.
+3. Tags de Controle (Use sempre que aplicável para atualizar a interface):
+   - [SCENE: Descricao visual em ingles] -> Para mudar a imagem de fundo. Ex: [SCENE: dark spooky forest path].
+   - [NPC: Nome | Tipo] -> Adicionar personagem. Ex: [NPC: Bargle | Inimigo].
+   - [LOOT: Nome do Item] -> Quando o jogador ganha um item. Ex: [LOOT: Poção de Cura] ou [LOOT: Espada Longa +1]. O sistema adicionará ao inventário automaticamente.
+   - [DAMAGE: Numero] -> Quando o jogador sofre dano. Ex: [DAMAGE: 5]. O sistema reduzirá o HP automaticamente.
+   - [HEAL: Numero] -> Quando o jogador recupera vida. Ex: [HEAL: 8].
 
-REGRAS:
-- Regra do Cool: Descrições épicas evitam testes triviais.
-- Combate: Peça testes se houver risco.
-- Imersão: Alta fantasia, descritivo.
-- Aguarde o primeiro "Olá" ou inicio do jogador para começar.
+COMPORTAMENTO:
+- Não decida as ações do jogador. Pergunte "O que você faz?".
+- Seja breve (máx 3 parágrafos) mas atmosférico.
+- Se o jogador atacar, descreva o resultado baseado no contexto.
 `;
 
 const STORAGE_KEY = 'karameikos_save_v1';
@@ -274,6 +332,7 @@ export default function GameInterface() {
   const [loading, setLoading] = useState(false);
   const [activeScreen, setActiveScreen] = useState('GAME');
   const [inputText, setInputText] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // State for AI Generated Images
   const [sceneImageUrl, setSceneImageUrl] = useState<string | null>(null);
@@ -294,7 +353,7 @@ export default function GameInterface() {
           name: 'Viajante', class: '', 
           stats: { hp_current: 10, hp_max: 10, xp: 0, level: 1 },
           str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10,
-          skills: '', inventory: ''
+          skills: '', inventory: '', inventoryItems: []
       },
       npcs: [] as any[],
       suggestions: ['Olhar ao redor', 'Seguir para a cidade'],
@@ -309,7 +368,6 @@ export default function GameInterface() {
   // Auto-save effect
   useEffect(() => {
     // Filter out scene images from persistence to save localStorage space (base64 is huge)
-    // The current scene is naturally regenerated on reload due to gameState.scene_image_prompt logic
     const messagesToSave = messages.map(m => {
         if (m.sender === 'scene') return null; 
         return m;
@@ -409,51 +467,97 @@ export default function GameInterface() {
             console.error("Failed to parse JSON from code block", e);
         }
     } else {
-        // Fallback Strategy 2: Find braces manually to handle nested objects correcty
-        const firstOpen = rawText.indexOf('{');
+        // Fallback: Check for loose JSON at start
+         const firstOpen = rawText.indexOf('{');
         if (firstOpen !== -1) {
             let balance = 0;
             let endIndex = -1;
             for (let i = firstOpen; i < rawText.length; i++) {
                 if (rawText[i] === '{') balance++;
                 else if (rawText[i] === '}') balance--;
-                
-                if (balance === 0) {
-                    endIndex = i + 1;
-                    break;
-                }
+                if (balance === 0) { endIndex = i + 1; break; }
             }
-
             if (endIndex !== -1) {
                 const potentialJson = rawText.substring(firstOpen, endIndex);
                 try {
                     jsonPart = JSON.parse(potentialJson);
                     markdownPart = rawText.replace(potentialJson, '').trim();
-                    // Cleanup leftover fences if regex missed them but we manually found the object
                     markdownPart = markdownPart.replace(/^```json/, '').replace(/^```/, '').trim();
-                } catch (e) {
-                    console.warn("Found brace block but failed to parse", e);
-                }
+                } catch (e) {}
             }
         }
     }
 
-    // Update Game State
-    if (jsonPart) {
-      setGameState(prev => ({
-        ...prev,
-        location: (jsonPart as any).location || prev.location,
-        player: { ...prev.player, ...(jsonPart as any).player_stats },
-        npcs: (jsonPart as any).active_npcs || [],
-        suggestions: (jsonPart as any).suggestions || [],
-        phase: (jsonPart as any).phase || prev.phase,
-        scene_image_prompt: (jsonPart as any).scene_image_prompt || prev.scene_image_prompt
-      }));
+    // PROCESS GAMEPLAY TAGS [LOOT], [DAMAGE], [HEAL], [SCENE]
+    // We do this BEFORE setting messages to clean up the text shown to user
+    let processedText = markdownPart;
+    let stateUpdates = { inventoryAdd: [] as string[], damage: 0, heal: 0, newScene: '' };
+
+    // Regex Parsers
+    const lootRegex = /\[LOOT:\s*(.*?)\]/g;
+    const dmgRegex = /\[DAMAGE:\s*(\d+)\]/g;
+    const healRegex = /\[HEAL:\s*(\d+)\]/g;
+    const sceneRegex = /\[SCENE:\s*(.*?)\]/g;
+
+    // Extract Data
+    let match;
+    while ((match = lootRegex.exec(processedText)) !== null) {
+        stateUpdates.inventoryAdd.push(match[1]);
+    }
+    while ((match = dmgRegex.exec(processedText)) !== null) {
+        stateUpdates.damage += parseInt(match[1]);
+    }
+    while ((match = healRegex.exec(processedText)) !== null) {
+        stateUpdates.heal += parseInt(match[1]);
+    }
+    while ((match = sceneRegex.exec(processedText)) !== null) {
+        stateUpdates.newScene = match[1];
     }
 
+    // Replace Tags for Visuals
+    processedText = processedText.replace(lootRegex, '**✨ Obteve: $1**');
+    processedText = processedText.replace(dmgRegex, '**💥 -$1 PV**');
+    processedText = processedText.replace(healRegex, '**💚 +$1 PV**');
+    processedText = processedText.replace(sceneRegex, ''); // Remove scene tag from text as it updates background
+
+    // Update Game State
+    setGameState(prev => {
+        const newHp = Math.min(
+            Math.max(0, prev.player.stats.hp_current - stateUpdates.damage + stateUpdates.heal),
+            prev.player.stats.hp_max
+        );
+
+        let newState = { ...prev };
+        
+        // Merge JSON updates if they exist
+        if (jsonPart) {
+             newState = {
+                ...newState,
+                location: (jsonPart as any).location || prev.location,
+                player: { ...prev.player, ...(jsonPart as any).player_stats },
+                npcs: (jsonPart as any).active_npcs || [],
+                suggestions: (jsonPart as any).suggestions || [],
+                phase: (jsonPart as any).phase || prev.phase,
+                // Only update scene from JSON if tag didn't find one
+                scene_image_prompt: stateUpdates.newScene || (jsonPart as any).scene_image_prompt || prev.scene_image_prompt
+             };
+        } else if (stateUpdates.newScene) {
+             newState.scene_image_prompt = stateUpdates.newScene;
+        }
+
+        // Apply Tag Updates
+        newState.player = {
+            ...newState.player,
+            stats: { ...newState.player.stats, hp_current: newHp },
+            inventoryItems: [...(newState.player.inventoryItems || []), ...stateUpdates.inventoryAdd]
+        };
+
+        return newState;
+    });
+
     // Append Narrative Message
-    if (markdownPart) {
-      setMessages(prev => [...prev, { sender: 'dm', text: markdownPart }]);
+    if (processedText) {
+      setMessages(prev => [...prev, { sender: 'dm', text: processedText }]);
     }
     setLoading(false);
   };
@@ -490,6 +594,42 @@ export default function GameInterface() {
     }
   };
 
+  const exportSave = () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ gameState, messages: messages.filter(m => m.sender !== 'scene') }));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `karameikos_save_${gameState.player.name || 'hero'}.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+  };
+
+  const importSave = () => {
+      fileInputRef.current?.click();
+  };
+
+  const handleFileLoad = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          try {
+              if (typeof e.target?.result === 'string') {
+                  const data = JSON.parse(e.target.result);
+                  if (data.gameState) {
+                      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                      window.location.reload();
+                  } else {
+                      alert("Arquivo inválido");
+                  }
+              }
+          } catch(err) {
+              alert("Erro ao ler arquivo");
+          }
+      };
+      reader.readAsText(file);
+  };
+
   const handleCharacterSubmit = async (data: any) => {
       setGameState(prev => ({ ...prev, player: { ...prev.player, ...data }}));
       setActiveScreen('GAME');
@@ -515,6 +655,8 @@ export default function GameInterface() {
 
   return (
     <div className="flex h-screen bg-black text-gray-100 font-sans overflow-hidden relative">
+      <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileLoad} accept=".json" />
+      
       {/* Dynamic Background */}
       <div className="absolute inset-0 z-0 transition-opacity duration-1000">
         {sceneImageUrl ? (
@@ -548,6 +690,11 @@ export default function GameInterface() {
             </div>
             
             <div className="flex gap-2 pointer-events-auto">
+               <button onClick={exportSave} title="Salvar Jogo" className="w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 bg-black/50 hover:bg-gold/20 hover:text-gold transition-all"><DownloadIcon /></button>
+               <button onClick={importSave} title="Carregar Jogo" className="w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 bg-black/50 hover:bg-gold/20 hover:text-gold transition-all"><UploadIcon /></button>
+               
+               <div className="w-px h-10 bg-white/10 mx-1"></div>
+
                <button 
                 onClick={resetGame}
                 className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 bg-black/50 text-red-400 hover:bg-red-900/30 transition-all`}
