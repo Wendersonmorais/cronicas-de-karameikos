@@ -19,6 +19,7 @@ const ScrollIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 
 const StatsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>;
 const DownloadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
 const UploadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
+const SpeakIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
 
 // Sub Components
 const ScreenModal: React.FC<{ title: string; children: React.ReactNode; onClose: () => void }> = ({ title, children, onClose }) => (
@@ -289,31 +290,33 @@ const EntityCard = ({ npc }: any) => (
 
 // Constants
 const SYSTEM_INSTRUCTION = `
-Você é o Mestre de Jogo (DM) de "Crônicas de Karameikos", ambientado em Mystara.
-Atue como um narrador clássico de D&D 5e: descritivo, justo, mas perigoso.
+VOCÊ É O MESTRE DE JOGO (DM) PARA "CRÔNICAS DE KARAMEIKOS V3.0".
 
-LORE & AMBIENTAÇÃO (Obrigatório):
-- O local é o Grão-Ducado de Karameikos. Há tensão entre os nativos Traladaranos (supersticiosos, oprimidos) e os conquistadores Thyatianos (pragmáticos, dominantes).
-- Mencione rumores sobre o Barão Águia Negra (vilão), a Ordem do Grifo ou os perigos da Floresta Dymrak.
-- Monstros comuns: Goblins, Gnolls, Lobisomens (frequentes na lore).
+OBJETIVO:
+Guiar uma aventura épica de D&D 5e em Mystara com alta imersão audiovisual.
 
-REGRAS DE GAMEPLAY (Obrigatório):
-1. Responda em Português.
-2. Formatação: Use **negrito** para NPCs e itens importantes. *Itálico* para sons e atmosfera.
-3. Tags de Controle (Use sempre que aplicável para atualizar a interface):
-   - [SCENE: Descricao visual em ingles] -> Para mudar a imagem de fundo. Ex: [SCENE: dark spooky forest path].
-   - [NPC: Nome | Tipo] -> Adicionar personagem. Ex: [NPC: Bargle | Inimigo].
-   - [LOOT: Nome do Item] -> Quando o jogador ganha um item. Ex: [LOOT: Poção de Cura] ou [LOOT: Espada Longa +1]. O sistema adicionará ao inventário automaticamente.
-   - [DAMAGE: Numero] -> Quando o jogador sofre dano. Ex: [DAMAGE: 5]. O sistema reduzirá o HP automaticamente.
-   - [HEAL: Numero] -> Quando o jogador recupera vida. Ex: [HEAL: 8].
+CONTROLES DO MOTOR (Use estas Tags no seu texto para controlar o app):
+1. VISUAL: [IMG: descrição visual em ingles para gerar imagem]
+   - Use em cada mudança de cena. Ex: [IMG: dark mysterious dungeon with blue torches]
+2. AUDIO/TENSÃO: [COMBAT: START] ou [COMBAT: END]
+   - Use para iniciar/parar o "Modo de Combate" (tela vermelha, tremedeira).
+3. PERSONAGENS: [NPC: Nome | Tipo]
+   - Ex: [NPC: Goblin | Inimigo]
+4. LOOT: [LOOT: Nome do Item]
+   - O jogador recebe o item automaticamente.
+5. DANO/CURA: [DAMAGE: N] ou [HEAL: N]
+   - Controla a barra de vida do jogador.
 
-COMPORTAMENTO:
-- Não decida as ações do jogador. Pergunte "O que você faz?".
-- Seja breve (máx 3 parágrafos) mas atmosférico.
-- Se o jogador atacar, descreva o resultado baseado no contexto.
+ESTILO NARRATIVO:
+- Português do Brasil.
+- Descritivo, sombrio, Fantasia Clássica.
+- Lore de Karameikos (Thyatianos vs Traladaranos, Barão Águia Negra, etc).
+
+INSTRUÇÃO INICIAL:
+Se não houver histórico, comece com uma introdução impactante em Threshold e peça ao jogador para se descrever. Use [IMG: ...] na primeira mensagem.
 `;
 
-const STORAGE_KEY = 'karameikos_save_v1';
+const STORAGE_KEY = 'karameikos_save_v3';
 
 const loadSavedState = () => {
   if (typeof window === 'undefined') return null;
@@ -337,12 +340,17 @@ export default function GameInterface() {
   // State for AI Generated Images
   const [sceneImageUrl, setSceneImageUrl] = useState<string | null>(null);
   const lastScenePrompt = useRef<string>("");
+  
+  // State for Combat Mode
+  const [isCombatMode, setIsCombatMode] = useState(false);
+  // Shake animation trigger
+  const [shake, setShake] = useState(false);
 
   const savedData = useRef(loadSavedState());
 
   const [messages, setMessages] = useState<Array<{sender: 'system'|'dm'|'player'|'scene', text?: string, imageUrl?: string}>>(() => {
     return savedData.current?.messages || [
-      { sender: 'system', text: 'Sistema inicializado. Conectando ao servidor neural...' }
+      { sender: 'system', text: 'Sistema Karameikos v3.0 inicializado. Conectando ao servidor neural...' }
     ];
   });
   
@@ -452,6 +460,17 @@ export default function GameInterface() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Text to Speech Function
+  const speakText = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // Stop current speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR';
+    utterance.pitch = 0.8; // Deeper voice for DM
+    utterance.rate = 1.1;
+    window.speechSynthesis.speak(utterance);
+  };
+
   const processResponse = (rawText: string) => {
     let jsonPart = null;
     let markdownPart = rawText;
@@ -488,16 +507,16 @@ export default function GameInterface() {
         }
     }
 
-    // PROCESS GAMEPLAY TAGS [LOOT], [DAMAGE], [HEAL], [SCENE]
-    // We do this BEFORE setting messages to clean up the text shown to user
+    // PROCESS GAMEPLAY TAGS [LOOT], [DAMAGE], [HEAL], [IMG], [COMBAT]
     let processedText = markdownPart;
-    let stateUpdates = { inventoryAdd: [] as string[], damage: 0, heal: 0, newScene: '' };
+    let stateUpdates = { inventoryAdd: [] as string[], damage: 0, heal: 0, newScene: '', combat: null as string | null };
 
     // Regex Parsers
     const lootRegex = /\[LOOT:\s*(.*?)\]/g;
     const dmgRegex = /\[DAMAGE:\s*(\d+)\]/g;
     const healRegex = /\[HEAL:\s*(\d+)\]/g;
-    const sceneRegex = /\[SCENE:\s*(.*?)\]/g;
+    const sceneRegex = /\[(SCENE|IMG):\s*(.*?)\]/g; // Support both SCENE and IMG tags
+    const combatRegex = /\[COMBAT:\s*(START|END)\]/g;
 
     // Extract Data
     let match;
@@ -511,14 +530,18 @@ export default function GameInterface() {
         stateUpdates.heal += parseInt(match[1]);
     }
     while ((match = sceneRegex.exec(processedText)) !== null) {
-        stateUpdates.newScene = match[1];
+        stateUpdates.newScene = match[2];
+    }
+    while ((match = combatRegex.exec(processedText)) !== null) {
+        stateUpdates.combat = match[1];
     }
 
     // Replace Tags for Visuals
     processedText = processedText.replace(lootRegex, '**✨ Obteve: $1**');
     processedText = processedText.replace(dmgRegex, '**💥 -$1 PV**');
     processedText = processedText.replace(healRegex, '**💚 +$1 PV**');
-    processedText = processedText.replace(sceneRegex, ''); // Remove scene tag from text as it updates background
+    processedText = processedText.replace(sceneRegex, ''); 
+    processedText = processedText.replace(combatRegex, ''); 
 
     // Update Game State
     setGameState(prev => {
@@ -554,6 +577,21 @@ export default function GameInterface() {
 
         return newState;
     });
+
+    // Handle Combat State
+    if (stateUpdates.combat === 'START') {
+        setIsCombatMode(true);
+        setShake(true);
+        setTimeout(() => setShake(false), 500); // 0.5s shake
+    } else if (stateUpdates.combat === 'END') {
+        setIsCombatMode(false);
+    }
+    
+    // Trigger shake on damage too
+    if (stateUpdates.damage > 0) {
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+    }
 
     // Append Narrative Message
     if (processedText) {
@@ -654,7 +692,7 @@ export default function GameInterface() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-gray-100 font-sans overflow-hidden relative">
+    <div className={`flex h-screen bg-black text-gray-100 font-sans overflow-hidden relative ${shake ? 'animate-shake' : ''}`}>
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileLoad} accept=".json" />
       
       {/* Dynamic Background */}
@@ -664,7 +702,7 @@ export default function GameInterface() {
         ) : (
             <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-20"></div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-gray-900/95 to-gray-900/60"></div>
+        <div className={`absolute inset-0 transition-colors duration-1000 ${isCombatMode ? 'bg-red-900/40 combat-pulse' : 'bg-gradient-to-t from-black via-gray-900/95 to-gray-900/60'}`}></div>
       </div>
 
       {/* Main Grid Layout */}
@@ -683,6 +721,7 @@ export default function GameInterface() {
             <div className={`transition-opacity duration-500 ${viewMode ? 'opacity-0' : 'opacity-100'}`}>
                <div className="flex items-center gap-2 text-gold/80 text-xs font-bold uppercase tracking-widest mb-1">
                  <MapIcon /> Karameikos
+                 {isCombatMode && <span className="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] animate-pulse">EM COMBATE</span>}
                </div>
                <h1 className="cinzel text-4xl text-white drop-shadow-lg tracking-wide font-bold">
                  {gameState.location}
@@ -749,12 +788,17 @@ export default function GameInterface() {
                 )}
 
                 {msg.sender === 'dm' && msg.text && (
-                  <div className="flex gap-4 max-w-2xl">
+                  <div className="flex gap-4 max-w-2xl group">
                     <div className="w-10 h-10 flex-shrink-0 rounded-full bg-black border border-gold/50 overflow-hidden mt-1">
                        <img src="https://ui-avatars.com/api/?name=DM&background=000&color=d4af37" alt="DM" />
                     </div>
                     <div>
-                      <span className="text-gold text-xs font-bold uppercase tracking-widest mb-1 block">Mestre de Jogo</span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-gold text-xs font-bold uppercase tracking-widest block">Mestre de Jogo</span>
+                        <button onClick={() => speakText(msg.text || '')} className="text-gray-500 hover:text-gold transition-colors opacity-0 group-hover:opacity-100" title="Ler em voz alta">
+                           <SpeakIcon />
+                        </button>
+                      </div>
                       <div className="text-lg leading-relaxed text-shadow-sm font-serif text-gray-100">
                         <ReactMarkdown components={{p: ({node, ...props}) => <p className="mb-4" {...props} />}}>
                           {msg.text}
